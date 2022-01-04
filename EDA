@@ -1,0 +1,57 @@
+rm(list=ls())
+
+library(pacman)
+pacman::p_load(pacman, dplyr, GGally, ggplot2, ggthemes, 
+               ggvis, httr, lubridate, plotly, rio, rmarkdown, shiny, 
+               stringr, tidyr, readxl, tidyverse) 
+
+#library(readxl)
+Interview_question_final <- read_excel("C:/Users/jsinswe/Downloads/Interview_question_final.xlsx")
+df <- Interview_question_final
+
+#Filter transplant
+names(df)
+df1 <- df %>% filter(df$'pre/post/transplant episode type' != "post")
+
+#Compute Duration
+finish <- as.Date(df1$`Admit Visit Date`, format="%yyyy/%mm/%dd")
+start <- as.Date(df1$`Discharge Date`, format="%yyyy/%mm/%dd")
+date_diff<-as.data.frame(finish-start)
+
+#Add column
+df2 <- data.frame(date_diff)
+df3 <- cbind(df1,df2)
+
+#Rename last column
+names(df3)[length(names(df3))]<-"duration"
+
+#Convert date value to date
+transplant_date <- as.Date(as.integer(df3$`Transplant Date`), origin = "1900-01-01")
+
+#Convert month and year
+admin_date <- factor(format(df3$'Admit Visit Date','%b %Y'))
+discharge_date <- factor(format(df3$'Discharge Date','%b %Y'))
+transplant_date <- factor(format(transplant_date,'%b %Y'))
+
+#Add date columnd
+admin_date <- data.frame(admin_date)
+discharge_date <- data.frame(discharge_date)
+transplant_date <- data.frame(transplant_date)
+
+#Replace values
+df3[3] <- admin_date
+df3[4] <- discharge_date
+df3[6] <- transplant_date
+
+#GroupBy
+new_list <- df3[3] %>% group_by(df3$'Admit Visit Date')
+
+#Barplot
+chart <- new_list %>% count('Admit Visit Date', sort = TRUE)
+bp <- barplot(chart$n, main="Statistical Count", names.arg=c(chart$`df3$"Admit Visit Date"`))
+
+#Label values on bars
+text(bp, 0, round(chart$n, 1),cex=1,pos=3)
+
+#Export to excel
+write_xlsx(df3, "C:/Users/jsinswe/Downloads/results.xlsx")
